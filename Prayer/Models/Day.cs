@@ -1,4 +1,4 @@
-﻿namespace Prayer
+﻿namespace Prayer.Models
 {
     internal record Day()
     {

@@ -13,7 +13,7 @@ namespace Prayer
         private static readonly uint SPIF_UPDATEINIFILE = 0x01;
         private static readonly uint SPIF_SENDWININICHANGE = 0x02;
 
-        static public void SetWallpaper(String path)
+        static public void SetWallpaper(string path)
         {
             RegistryKey? key = Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop", true);
             key?.SetValue(@"WallpaperStyle", 0.ToString()); // 2 is stretched
@@ -21,15 +21,10 @@ namespace Prayer
 
             SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, path, SPIF_UPDATEINIFILE | SPIF_SENDWININICHANGE);
         }
-        public WindowsManager(string imagePath, string imageText)
+        public WindowsManager(string imagePath, string imageText,List<SectionDetails> sectionDetails)
         {
-            var imageGenerator = new TextImageGenerator(Color.Black, Color.FromArgb(238, 238, 242), "Arial", 40);
-            imageGenerator.SaveAsJpg(imagePath, imageText);
-            // verify
-            if (File.Exists(imagePath))
-            {
-                SetWallpaper(imagePath);
-            }
+            TextImageGenerator.DrawText(imageText, sectionDetails, new("Arial", 40), Color.Black, 1920, 1080, imagePath);
+            SetWallpaper(imagePath);
         }
     }
 }
