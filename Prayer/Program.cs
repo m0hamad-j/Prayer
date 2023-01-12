@@ -11,29 +11,34 @@ HtmlWeb web = new();
 Console.WriteLine("Retrieving data from www.almaaref.org");
 Console.WriteLine("Loading...");
 var maarefDoc = await web.LoadFromWebAsync("https://www.almaaref.org/");
-var salaHeader = maarefDoc.DocumentNode.SelectNodes("//div[@class='sala-header']");
+var salaHeader = maarefDoc.DocumentNode.SelectNodes("//div[@class='card h20 mb-3']");
 Console.WriteLine("Setting Hijri day..");
-var day = salaHeader.First().InnerHtml.Trim();
-var koffarDay = salaHeader.Last().FirstChild.InnerHtml.Trim();
-var hijriDay = salaHeader.Last().LastChild.InnerHtml.Trim();
-prayer.DayName = day;
-prayer.HijriDay = hijriDay;
-prayer.MiladiDay = koffarDay;
-Console.WriteLine("Done.");
-Console.WriteLine("Retrieving data from alnour.com.lb");
-Console.WriteLine("Loading...");
-var alNourDoc = await web.LoadFromWebAsync("http://alnour.com.lb/");
-var htmlPrayersTimes = alNourDoc.DocumentNode.SelectSingleNode("//ul[@class='day-times']");
-Console.WriteLine("Setting prayer times..");
-var salat = htmlPrayersTimes.ChildNodes.Where(s => s.Name == "li");
-
-foreach (var htmlPrayersTime in salat)
+var data = salaHeader.First().InnerText.Trim();
+var listOfData = data.Split(new[] { "\r\n" }, StringSplitOptions.None);
+listOfData = listOfData.Where(d => !string.IsNullOrEmpty(d)).ToArray();
+var cleanData = new List<string>();
+foreach (var line in listOfData)
 {
-    prayer.Prayers.Add(new(htmlPrayersTime.FirstChild.InnerHtml.Trim(), htmlPrayersTime.LastChild.InnerHtml.Trim()));
+    var temp = RemoveWhitespace(line);
+    var bol = line == "-";
+    if (!string.IsNullOrEmpty(temp) && line.Trim() != "مواقيــت الصـــلاة ليوم" && line.Trim() != "-")
+        cleanData.Add(line.Trim());
 }
+var day = cleanData.First();
+var prayerTimes = cleanData.TakeLast(16).ToList();
+prayer.DayName = day;
+var listOfPrayer = new List<Prayer.Models.Prayer>();
+for (int i = 0; i < prayerTimes.Count; i += 2)
+{
+    listOfPrayer.Add(new(prayerTimes[i + 1], prayerTimes[i]));
+    prayer.Prayers.Add(new(prayerTimes[i + 1], prayerTimes[i]));
+}
+
+Console.WriteLine("Done.");
+
 string textToImage = prayer.DayName + "\n";
-textToImage += prayer.HijriDay + "\n";
-textToImage += prayer.MiladiDay + "\n";
+//textToImage += prayer.HijriDay + "\n";
+//textToImage += prayer.MiladiDay + "\n";
 
 foreach (var sala in prayer.Prayers)
 {
@@ -69,3 +74,7 @@ Console.WriteLine("Done scraping..");
 Console.WriteLine("Setup wallpaper");
 var windowsManager = new WindowsManager($"C:\\Users\\m.jawad\\Documents\\Prayer\\OutputImages\\{DateTime.Now:ddd-MMM-yyyy}.jpeg", textToImage, sectionDetails);
 Console.WriteLine("Changed Wallpaper");
+string RemoveWhitespace(string input)
+    => new string(input.ToCharArray()
+        .Where(c => !char.IsWhiteSpace(c))
+        .ToArray());
